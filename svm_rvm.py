@@ -33,6 +33,7 @@
 #              This is necessary because I use ranges to separate the train
 #              and test dataset.  
 #
+#              Phase 1
 #              Currently this work is halted, it's half done because because
 #              I couldn't install the project sklearn_bayes it gave compilation
 #              errors. 
@@ -44,6 +45,15 @@
 #              am writing this comment. 
 #              When I locked in the sklearn_bayes project issues there are others
 #              with the some problem.
+#
+#              Phase 2
+#              Currently I was successful in installing other implementation of
+#              RVM (slower version 2001 paper). But for my study purpose, because
+#              my dataset was small it didn't make a big difference.
+#              I have some interesting results and discussion in the project page: 
+#
+#              Small_study_of_SVM_vs_RVM_in_ML_for_micro-controllers
+# https://github.com/joaocarvalhoopen/Small_study_of_SVM_vs_RVM_in_ML_for_micro-controllers
 #
 # Note: The dataset is from the FFT 32 from Arduino audio word classification
 #       and it came from Eloquent Arduino https://eloquentarduino.
@@ -64,7 +74,9 @@
 # To install you have to do:
 #    pip install https://github.com/JamesRitchie/scikit-rvm/archive/master.zip
 #
-#
+# Then I installed the:
+#   [JamesRitchie - scikit-rvm](https://github.com/JamesRitchie/scikit-rvm)  
+# 
 
 import numpy as np
 from sklearn.utils import shuffle
