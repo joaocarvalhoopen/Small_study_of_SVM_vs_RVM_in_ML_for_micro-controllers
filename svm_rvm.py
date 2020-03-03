@@ -58,12 +58,20 @@
 # The advantage of RVM's is that it uses less memory (less support
 # vectors) and the inference execution is faster.
 # This is perfect for microcontrollers that have little resources.
+#
+# Afterwords I tried to use the slower RVM algorithm implementation (2001 paper),
+# [scikit-rvm](https://github.com/JamesRitchie/scikit-rvm).
+# To install you have to do:
+#    pip install https://github.com/JamesRitchie/scikit-rvm/archive/master.zip
+#
+#
 
 import numpy as np
 from sklearn.utils import shuffle
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from io import StringIO   # StringIO behaves like a file object.
+from skrvm import RVC
 
 dataset = '''
 // 1
@@ -126,6 +134,92 @@ dataset = '''
 -8.88,-8.94,-14.19,-19.66,-26.55,-35.01,-44.11,-53.15,-62.53,-74.70,-86.88,-96.12,-105.79,-113.06,-117.47,-119.72,-120.71,-115.51,-112.12,-105.79,-101.87,-91.34,-79.95,-67.60,-58.32,-47.15,-36.49,-26.99,-19.82,-14.31,-10.82,-9.84
 '''
 
+def printDataSetTestVsPred(model, X_test):
+    y_pred = model.predict(X_test)
+    print("y_test:  ", y_test)
+    print("y_pred:  ", y_pred)
+
+def genBestSVM(X_train, y_train, X_test, y_test):
+    topModel    = None
+    topAccTrain = 0
+    topAccTest  = 0
+    topGamma    = 0
+    topNumSupportVecPerClass = 0
+ 
+    # Because the dataset is small, model generation is fast, so we can
+    # generate and search in 1000 models with different gamma's.
+    for i in range(1, 1000):  # 1000
+        # clf = SVC(kernel='linear').fit(X_train, y_train)
+        # clf = SVC(kernel='linear', gamma=0.001).fit(X_train, y_train)
+        gammaVal = 0.000001 * i
+        clf = SVC(kernel='rbf', gamma=gammaVal).fit(X_train, y_train) 
+    
+        numSupportVectors = clf.n_support_  # Per Class
+
+        y_pred = clf.predict(X_train)
+        accTrain = accuracy_score(y_train, y_pred)
+
+        y_pred = clf.predict(X_test)
+        accTest = accuracy_score(y_test, y_pred)
+        
+        print("SVM: gamma_val: {0:.6f}    acc_X_train: {1:.3f}   acc_X_test: {2:.3f}   num_support_vectors: {3}".format(
+            gammaVal, accTrain, accTest, numSupportVectors))
+
+        # We want a small difference between the train accuracy and the
+        # test accuracy, so that neither one is overfitting,
+        # while maximizing the absolute train value.
+        deltaCurr = abs(accTrain - accTest)
+        if (topModel == None) or (deltaCurr < 0.1 and topAccTrain < accTrain): 
+            topAccTrain = accTrain
+            topAccTest  = accTest
+            topModel = clf
+            topGamma = gammaVal
+            topNumSupportVecPerClass = numSupportVectors  # Per class.
+
+    return (topModel, topAccTrain, topAccTest, topGamma, topNumSupportVecPerClass)
+
+def genBestRVM(X_train, y_train, X_test, y_test):
+    topModel    = None
+    topAccTrain = 0
+    topAccTest  = 0
+    topAlpha    = 0
+    topNumSupportVecPerClass = 0
+ 
+    alphaVal = 0.00000001
+    # Because the dataset is small, model generation is fast, so we can
+    # generate and search in 12 models with different alpha's.
+    for i in range(1, 13):
+        alphaVal *= 5
+        # alphaVal = 0.000001
+        clf = RVC(kernel='rbf', alpha=alphaVal).fit(X_train, y_train) 
+
+        # Relevance Vectors
+        numSupportVectors = [] # Per class
+
+        y_pred = clf.predict(X_train)
+        accTrain = accuracy_score(y_train, y_pred)
+
+        y_pred = clf.predict(X_test)
+        accTest = accuracy_score(y_test, y_pred)
+        
+        print("RVM: alpha_val: {0:.8f}    acc_X_train: {1:.3f}   acc_X_test: {2:.3f}   num_support_vectors: {3}".format(
+            alphaVal, accTrain, accTest, numSupportVectors))
+
+        printDataSetTestVsPred(clf, X_test)
+
+        # We want a small difference between the train accuracy and the
+        # test accuracy, so that neither one is overfitting,
+        # while maximizing the absolute train value.
+        deltaCurr = abs(accTrain - accTest)
+        if (topModel == None) or (deltaCurr < 0.1 and topAccTrain < accTrain): 
+            topAccTrain = accTrain
+            topAccTest  = accTest
+            topModel = clf
+            topAlpha = alphaVal
+            topNumSupportVecPerClass = numSupportVectors  # Per class.
+
+    return (topModel, topAccTrain, topAccTest, topAlpha, topNumSupportVecPerClass)
+
 
 if __name__ == '__main__':
     
@@ -147,56 +241,36 @@ if __name__ == '__main__':
     X = data[:, 1:]  # select columns 1 through end
     y = data[:, 0]   # select column 0, the class
 
-    data, target = shuffle(X, y, random_state = 0)   
+    data, target = shuffle(X, y, random_state = 0) # 0 # 2   
     
-    X_train, X_test = data[:-10, :], data[-10:, :] 
+    X_train, X_test = data[:-10, :], data[-10:, :] # 10
     y_train, y_test = target[:-10], target[-10:]
+
+    #######
+    # Generate the best SVM optimizing the Gamma hyper-parameter.
     
-    top_model = None
-    top_train = 0
-    top_test  = 0
-    top_gamma = 0
-    top_num_support_vectors = 0    # Per class.
- 
-    # Because the dataset is small, model generation is fast, so we can
-    # generate and search in 1000 models with different gamma's.
-    for i in range(1, 1000):
-        # clf = SVC(kernel='linear').fit(X_train, y_train)
-        # clf = SVC(kernel='linear', gamma=0.001).fit(X_train, y_train)
-        gamma_val = 0.000001 * i
-        clf = SVC(kernel='rbf', gamma=gamma_val).fit(X_train, y_train) 
+    topModel, topAccTrain, topAccTest, topGamma, topNumSupportVecPerClass = genBestSVM(X_train, y_train, X_test, y_test)
+    print("\nSVM: top_gamma: {0:.6f}    acc_X_train: {1:.3f}   acc_X_test: {2:.3f}   num_support_vectors: {3}".format(
+        topGamma, topAccTrain, topAccTest, topNumSupportVecPerClass))
     
-        num_support_vectors = clf.n_support_  # Per Class
-
-        y_pred = clf.predict(X_train)
-        acc_train = accuracy_score(y_train, y_pred)
-
-        y_pred = clf.predict(X_test)
-        acc_test = accuracy_score(y_test, y_pred)
-        
-        print("gamma_val: {0:.6f}    acc_X_train: {1:.3f}   acc_X_test: {2:.3f}   num_support_vectors: {3}".format(
-            gamma_val, acc_train, acc_test, num_support_vectors))
-
-        # We want a small difference between the train accuracy and the
-        # test accuracy, so that neither one is overfitting,
-        # while maximizing the absolute train value.
-        delta_cur = abs(acc_train - acc_test)
-        if delta_cur < 0.1 and top_train < acc_train: 
-            top_train = acc_train
-            top_test  = acc_test
-            top_model = clf
-            top_gamma = gamma_val
-            top_num_support_vectors = num_support_vectors  # Per class.
-
-    print("\ntop_gamma: {0:.6f}    acc_X_train: {1:.3f}   acc_X_test: {2:.3f}   num_support_vectors: {3}".format(
-        top_gamma, top_train, top_test, top_num_support_vectors))
-
-    y_pred = top_model.predict(X_test)
-    acc_test = accuracy_score(y_test, y_pred)
-
     # Here just to compare to see if the 3 classes were present in the target test dataset.
+    y_pred = topModel.predict(X_test)
     print("y_test:  ", y_test)
     print("y_pred:  ", y_pred)
+
+    #######
+    # Generate the best RVM optimizing the alpha hyper-parameter.
+
+    topModel, topAccTrain, topAccTest, topAlpha, topNumSupportVecPerClass = genBestRVM(X_train, y_train, X_test, y_test)
+    print("\nRVM: top_alpha: {0:.6f}    acc_X_train: {1:.3f}   acc_X_test: {2:.3f}   num_support_vectors: {3}".format(
+        topAlpha, topAccTrain, topAccTest, topNumSupportVecPerClass))
+    
+    # Here just to compare to see if the 3 classes were present in the target test dataset.
+    # y_pred = topModel.predict(X_test)
+    # print("y_test:  ", y_test)
+    # print("y_pred:  ", y_pred)
+
+    printDataSetTestVsPred(topModel, X_test)
 
     print("...end")
 
