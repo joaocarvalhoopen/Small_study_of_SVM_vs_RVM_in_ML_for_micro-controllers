@@ -9,7 +9,7 @@ The dataset was made available by Simone [eloquentarduino voice_fft_dataset.py](
 In the references I collected links to interesting theoretical and practical information about RVM's.
 
 ## Points to note
-Because the data is small 52 cases and high dimensional (32 features) the optimization of gamma is heavily dependent on the shuffle lotter. If you omit the random_state = 0 in the shuffle call you can see for yourself that you can generate results for the best model, from 60% to 90% accuracy in the test dataset. But you should try to find one that has a similar value between the accuracy of the train and test dataset's, small delta (no overfitting), you should maximize the absolute train accuracy and you should look to see if the 3 classes are represented in the test dataset.      
+Because the data is small 52 cases and high dimensional (32 features) the optimization of gamma in SVM is heavily dependent on the shuffle lottery. If you omit the random_state = 0 in the shuffle call you can see for yourself that you can generate results for the best model, from 60% to 90% accuracy in the test dataset. But you should try to find one that has a similar value between the accuracy of the train and test dataset's, small delta (no overfitting), you should maximize the absolute train accuracy and you should look to see if the 3 classes are represented in the test dataset.      
 
 ## Screen shoot
 SVM vs RVM output <br>
