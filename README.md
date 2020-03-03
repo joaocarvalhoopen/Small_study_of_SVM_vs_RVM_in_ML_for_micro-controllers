@@ -33,7 +33,7 @@ Next path to follow is to study more how the algorithm works to find a way to tu
 
 ## Dependencies
 [Project sklearn_bayes for the fast implementation of RVM](https://github.com/AmazaspShumik/sklearn_bayes/) <br>
-[sklearn_bayes](https://github.com/AmazaspShumik/sklearn_bayes/) <br>
+[JamesRitchie - scikit-rvm](https://github.com/JamesRitchie/scikit-rvm) <br>
 [Project micromlgen from Eloquent Arduino](https://github.com/eloquentarduino/micromlgen) <br>
 
 # Glossary
